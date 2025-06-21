@@ -58,7 +58,8 @@ def main():
 
     # remove duplicates from selected playlists
     for playlist in playlists:
-        print('\r\033[KPlaylist: {}'.format(playlist.title))
+        if len(playlists) > 1:
+            print(f'\r\033[KPlaylist: {playlist.title}')
         moodName = 'Duplicate ' + playlist.title
         moodNameL = moodName.lower()
 
@@ -74,13 +75,14 @@ def main():
         filters = playlist.filters()['filters']
         # delete all filters with 'track.mood!' containing a id of a 'Duplicate *' mood
         for key in filters:
-            for i, f in enumerate(filters[key]):
-                for k, v in f.items():
-                    if k == 'track.mood!':
-                        for m in dupMoods:
-                            if v == m.key:
-                                filters[key].pop(i)
-                                break
+            if isinstance(filters[key], list):
+                for i, f in enumerate(filters[key]):
+                    for k, v in f.items():
+                        if k == 'track.mood!':
+                            for m in dupMoods:
+                                if v == m.key:
+                                    filters[key].pop(i)
+                                    break
 
         # Run searchTracks with the modified filter so we get all songs that would be in the playlist without any 'Duplicate *' moods filter to
         # - always mark the best quality version of duplicates as unique
