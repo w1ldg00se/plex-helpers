@@ -159,17 +159,22 @@ def main():
 
         print(f"Applying mood '{moodName}' to duplicates...")
         # Note: applying moods in parallel didn't improve speed, this just takes some time
-        with tqdm(total=len(tracks), maxinterval=1) as pbar:
-            pbar.monitor_interval = 1
+        with tqdm(total=len(tracks)) as pbar:
             for track in uniqueTracks:
                 if getattr(track, "hasMood", False): # only delete mood from tracks that have the mood set
                     mood_del(track, moodName) # delete mood, in case tracks have it set so they are not filtered any more
-                pbar.update(1)
+                    pbar.update(1)
+                    pbar.refresh()
+                else: # mood already set, nothing to do
+                    pbar.update(1)
 
             for track in duplicateTracks:
                 if not getattr(track, "hasMood", False): # only add mood to tracks that haven't the mood set
                     mood_add(track, moodName) # add mood, so tracks can be filtered
-                pbar.update(1)
+                    pbar.update(1)
+                    pbar.refresh()
+                else: # mood already set, nothing to do
+                    pbar.update(1)
 
         if not mood:
             print(f"Updating smart playlist filter to exclude tracks with mood '{moodName}'...")
