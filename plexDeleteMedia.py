@@ -29,7 +29,8 @@ def main():
         const=True,          # If --user is passed without a value, set to True
         help='Only for server owner: Username from which to choose the playlist (omit username to select a user from a list)'
     )
-    parser.add_argument('-y', '--yes', action='store_true', help="Don't ask for 'Press Y to continue' (items will get DELETED from the server without questions)")                                                                                                                         args = parser.parse_args()
+    parser.add_argument('-y', '--yes', action='store_true', help="Don't ask for 'Press Y to continue' (items will get DELETED from the server without questions)")
+    args = parser.parse_args()
 
     # Connect to plex
     plex = plex_connect()
@@ -77,10 +78,11 @@ def main():
             sys.exit(1)
 
     # delete items
+    print("Deleting...", end="", flush=True)
     for item in playlist.items():
         item.delete()
 
-    print("Finished")
+    print("\r\033[KFinished")
 
 
 if __name__ == '__main__':
