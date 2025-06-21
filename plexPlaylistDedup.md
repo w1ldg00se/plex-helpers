@@ -21,7 +21,7 @@ python plexPlaylistDedup.py
 python plexPlaylistDedup.py --match title duration
 
 #Further commandline options:
---playlist title-of-playlist # Playlist title to remove duplicates from (omit for interactive selection)
+--playlist title-of-playlist # Playlist title to remove duplicates from (supports regex, omit for interactive selection)
 --user username # Only for server owner: Username from which to choose the playlist (omit username to select a user from a list)
 --yes     # Don't ask for 'Press Y to continue'
 --verbose # Verbose mode (prints title of each track)

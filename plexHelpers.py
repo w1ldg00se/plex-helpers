@@ -11,6 +11,7 @@ import json
 import math
 import os
 import platform
+import re
 import requests
 import signal
 import stat
@@ -173,9 +174,9 @@ def mood_add(track, moodName):
     if track.moods:
         if any(mood.tag.lower() == moodName.lower() for mood in track.moods):
             return # mood already existing, nothing to do
-        track.mood_add(moodName)
+        track.addMood(moodName)
     else:
-        track.mood_add(moodName)
+        track.addMood(moodName)
 
 
 def mood_del(track, moodName):
@@ -356,13 +357,14 @@ def select_destination(paths = []):
     return destination['path']
 
 
-def select_playlist(plex, playlistType: Optional[Literal['audio', 'video', 'photo']] = None, smart: Optional[bool] = None, choice: Optional[str] = None):
+def select_playlist(plex, playlistType: Optional[Literal['audio', 'video', 'photo']] = None, smart: Optional[bool] = None, choice: Optional[str] = None, multiple: Optional[bool] = False):
     """
     Allows the user to choose a playlist.
 
     Optionally specify a playlist type of audio, video or photo.
     Optionally specify smart as True/False to only get smart/non-smart playlists.
     Optionally specify a playlist name via choice.
+    Optionally allows to select multiple playlists, but only when choice is a regex
     """
     playlists = plex.playlists()
     if playlistType:
@@ -400,6 +402,15 @@ def select_playlist(plex, playlistType: Optional[Literal['audio', 'video', 'phot
     else:
         try:
             playlist = next((p for p in playlists if p.title.lower() == choice.lower()), None)
+            if playlist == None and multiple:
+                try:
+                    pattern = re.compile(choice, re.IGNORECASE)
+                except:
+                    print(f"\r\033[K'{choice}' is not a valid regex pattern!")
+                    return
+                filtered_playlists = [p for p in playlists if pattern.search(p.title)]
+                print(f'\r\033[KPlaylists: {', '.join(p.title for p in filtered_playlists)}')
+                return filtered_playlists
         except:
             pass
 
