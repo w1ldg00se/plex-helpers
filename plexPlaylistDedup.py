@@ -160,6 +160,7 @@ def main():
         print(f"Applying mood '{moodName}' to duplicates...")
         # Note: applying moods in parallel didn't improve speed, this just takes some time
         with tqdm(total=len(tracks), maxinterval=1) as pbar:
+            pbar.monitor_interval = 1
             for track in uniqueTracks:
                 if getattr(track, "hasMood", False): # only delete mood from tracks that have the mood set
                     mood_del(track, moodName) # delete mood, in case tracks have it set so they are not filtered any more
