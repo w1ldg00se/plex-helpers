@@ -138,6 +138,39 @@ def get_file_size(item):
             filesize += part.size
     return filesize
 
+class MyFilterChoice:
+    """
+    Minimal version of plexapi.library.FilterChoice
+    """
+    def __init__(self, key, title):
+        self.key = key
+        self.title = title
+
+    def __repr__(self):
+        return f"<MyFilterChoice:{self.key}:{self.title}>"
+
+def get_moods_via_autocomplete(plex, section, query):
+    """
+    Loads a list of moods, starting with query, using the autocomplete feature that is used in the plex web UI.
+
+    You can also run section.listFilterChoices('mood', 'track'), but that is much slower and loads all moods without filtering.
+    This returns a list of MyFilterChoice objects, so it's a faster drop-in replacement for listFilterChoices.
+    """
+    url = f'{plex._baseurl}/library/sections/{section.key}/autocomplete?type=10&mood.query={query}'
+    headers = {
+        'X-Plex-Token': plex._token,
+        'Accept': 'application/json'
+    }
+    response = requests.get(url, headers=headers)
+    moods = []
+    media_container = response.json()['MediaContainer']
+    if 'Directory' in media_container:
+        for m in media_container['Directory']:
+            # Translate the json response to a MyFilterChoice object ('id'->key, 'tag'->title)
+            # to be a drop-in replacement for listFilterChoices.
+            moods.append(MyFilterChoice(key=m['id'], title=m['tag']))
+    return moods
+
 
 # Quality ranking for audio codecs, used in get_track_quality()
 codec_quality = {          # Sorted by quality, compatibility, open-source preferred

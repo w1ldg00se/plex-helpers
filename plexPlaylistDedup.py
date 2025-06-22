@@ -6,7 +6,7 @@ Description see plexPlaylistDedup.md
 import argparse
 from collections import defaultdict
 from tqdm import tqdm
-from plexHelpers import mood_add, mood_del, get_track_quality, plex_connect, select_playlist, select_user
+from plexHelpers import mood_add, mood_del, get_moods_via_autocomplete, get_track_quality, plex_connect, select_playlist, select_user
 
 def main():
     """
@@ -57,21 +57,21 @@ def main():
         playlists = [playlists]
 
     # remove duplicates from selected playlists
-    for playlist in playlists:
-        if len(playlists) > 1:
+    multiple_playlists = len(playlists) > 1
+    for playlist_ix, playlist in enumerate(playlists):
+        if multiple_playlists:
             print(f'\r\033[KPlaylist: {playlist.title}')
         moodName = 'Duplicate ' + playlist.title
         moodNameL = moodName.lower()
 
-        print("\r\033[KLoading section...", end="")
+        print("\r\033[KLoading section...", end="", flush=True)
         section = playlist.section()
 
-        print("\r\033[KLoading moods...", end="")
-        allMoods = section.listFilterChoices('mood', 'track') # get all moods that can be specified on the track (not an album)
-        dupMoods = [m for m in allMoods if m.title.lower().startswith('duplicate ')] # all 'Duplicate *' moods
-        mood = next((m for m in dupMoods if m.title.lower() == moodNameL), None)     # mood for this playlist (may not exist at this time)
+        print("\r\033[KLoading moods...", end="", flush=True)
+        moods = get_moods_via_autocomplete(plex, section, 'Duplicate ')       # all 'Duplicate *' moods
+        mood = next((m for m in moods if m.title.lower() == moodNameL), None) # mood for this playlist (may not exist at this time)  
 
-        print("\r\033[KLoading filter...", end="")
+        print("\r\033[KLoading filter...", end="", flush=True)
         filters = playlist.filters()['filters']
         # delete all filters with 'track.mood!' containing a id of a 'Duplicate *' mood
         for key in filters:
@@ -79,7 +79,7 @@ def main():
                 for i, f in enumerate(filters[key]):
                     for k, v in f.items():
                         if k == 'track.mood!':
-                            for m in dupMoods:
+                            for m in moods:
                                 if v == m.key:
                                     filters[key].pop(i)
                                     break
@@ -103,19 +103,19 @@ def main():
                 {'track.mood=': mood.key},
                 filters
             ]}
-            print("\r\033[KLoading duplicate tracks...", end="")
+            print("\r\033[KLoading duplicate tracks...", end="", flush=True)
             tracks = section.searchTracks(filters=filtersInclMood) # load currently duplicate tracks
             for track in tracks:
                 track.hasMood = True # tracks have the mood set (=currently duplicate tracks)
-            print("\r\033[KLoading unique tracks...", end="")
+            print("\r\033[KLoading unique tracks...", end="", flush=True)
             tracks.extend(section.searchTracks(filters=filtersExclMood)) # load currently unique tracks first
         else:
             # mood is not existing yet, so order doesn't matter and all can be loaded at once
             # that also means there is no 'Duplicate *' mood filter and we can just load the tracks from the playlist which is faster
-            print("\r\033[KLoading tracks...", end="")
+            print("\r\033[KLoading tracks...", end="", flush=True)
             tracks = playlist.items()
 
-        print("\r\033[KSearching duplicates...", end="")
+        print("\r\033[KSearching duplicates...", end="", flush=True)
         uniqueTracks = []    # List with unique tracks
         duplicateTracks = [] # List with duplicates
         # The playlist may be huge (many thousands of tracks), this is a fast way to check for duplicates:
@@ -177,10 +177,10 @@ def main():
                     pbar.update(1)
 
         if not mood:
-            print(f"Updating smart playlist filter to exclude tracks with mood '{moodName}'...")
+            print(f"\r\033[KUpdating smart playlist filter to exclude tracks with mood '{moodName}'...", end='', flush=True)
 
-            allMoods = section.listFilterChoices('mood', 'track') # get all moods that can be specified on the track (not an album)
-            mood = next((m for m in allMoods if m.title.lower() == moodNameL), None)     # mood for this playlist (may not exist at this time)
+            moods = get_moods_via_autocomplete(plex, section, 'Duplicate ')       # all 'Duplicate *' moods
+            mood = next((m for m in moods if m.title.lower() == moodNameL), None) # mood for this playlist (must now exist)
 
             # add filter to exclude mood
             k,v = next(iter(filters.items()))
@@ -192,6 +192,24 @@ def main():
                     {k: v}
                 ]}
             playlist.updateFilters(filters=filters)
+
+    # Cleanup unused 'Duplicate *' moods (whenever a playlist was renamed the old mood still exists and should be deleted)
+    print("\r\033[KChecking for unused 'Duplicate *' moods...", end="", flush=True)
+    playlists_all = plex.playlists()
+    for mood in moods:
+        if any(p.title == mood.title[len('Duplicate '):] for p in playlists_all):
+            continue # playlist for 'Duplicate *' mood existing, nothing to clean up
+
+        print(f"\r\033[KCleaning up unused mood '{mood.title}'...")
+        # moods can only be removed by removing them from all tracks, there is no mood.delete() function
+        filtersInclMood = {'and': [
+            {'track.mood=': mood.key}
+        ]}
+        tracks = section.searchTracks(filters=filtersInclMood) # load tracks with unused 'Duplicate *' mood
+        with tqdm(total=len(tracks)) as pbar:
+            for track in tracks:
+                track.removeMood(mood.title)
+                pbar.update(1)
 
     print("\r\033[KFinished")
 

@@ -6,7 +6,8 @@ It is using the workaround with setting a mood on duplicate songs, and then excl
 The script works by choosing the name of the smart playlist you wish to remove duplicate songs from. It adds the mood `Duplicate title-of-playlist` to any of the songs found as duplicates. Just a general `Duplicate` mood doesn't work because a track could be in multiple playlists and be only a duplicate in one specific playlist and not in other playlists, thats why the name of the playlist is included in the mood.
 Out of all the duplicate tracks one version with the best quality is choosen as the unique track, and unless a better quality version appears this one stays the unique one, even after multiple runa of this script. This is relevent for playlists synced for offline play with Plexamp so it doesn't have to sync another version of the same song after each time this script is run.
 The smart playlist filter is automatically updated to include the filter `Track Mood` `is not` `Duplicate title-of-playlist` to exclude duplicate tracks.
-You can run the script as often as you like (the first run is slower, further runs are much faster).
+In case a smart playlist was renamed the `Duplicate` mood for the old name will be automatically removed.
+You can run the script as often as you like, even as a cronjob when you specify at least the `--playlist` and `--yes` command-line parameters.
 
 ## How to run
 After [installation](README.md#installation), just run the script:
