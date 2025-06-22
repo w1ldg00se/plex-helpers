@@ -10,6 +10,7 @@ import getpass
 import json
 import math
 import os
+import pathlib
 import platform
 import re
 import requests
@@ -139,10 +140,20 @@ def get_file_size(item):
 
 
 # Quality ranking for audio codecs, used in get_track_quality()
-codec_quality = {
-    'flac': 3,
-    'aac': 2,
-    'mp3': 1
+codec_quality = {          # Sorted by quality, compatibility, open-source preferred
+    'flac':            13, # lossless, open-source
+    'alac':            12, # lossless, Apple's flac version, still open source like flac but less compatibility than flac
+    'pcm':             11, # lossless, without compression, so same quality than flac/alac but with worse storage efficiency
+    'ape':             10, # lossless, better compression than flac (using more cpu), but proprietary with less compatibility
+    'dsd_lsbf_planar':  9, # lossless, has a more analog-style warmth than the accurate flac
+    'opus':             8, # lossy, successor of vorbis, free
+    'vorbis':           7, # lossy, in lower bitrates aac is better, in higher ones vorbis is better, is free so prefer it over aac
+    'aac':              6, # lossy, usully mentioned as successor of mp3, up to 48 channels, requires license
+    'ac3':              5, # lossy, up to 5.1 surround sound
+    'mp3':              4, # lossy, good compatibility, usually stereo, good for music
+    'wmav2':            3, # lossy, can be better than mp3 at lower bitrates, but limited compatibility
+    'mp2':              2, # lossy, better for streaming (latency, robustness) than mp3, but mp3 is better for storage efficiency
+    'cook':             1  # obsolete RealPlayer format
 }
 
 def get_track_quality(track):
@@ -156,9 +167,18 @@ def get_track_quality(track):
     media = track.media[0]
 
     # Safely access attributes with default values if they don't exist
-    codec_rank = codec_quality.get(getattr(media, 'audioCodec', '').lower(), 0)
-    if codec_rank == 0:
-        raise Exception('Please add audio format {} to codec_quality'.format(getattr(media, 'audioCodec', '')))
+    codec = getattr(media, 'audioCodec', None) # can be present with value None!
+    if not codec:
+        try: # try to parse codec from filename
+            codec = pathlib.PurePath(media.parts[0].file).suffix[1:].lower()
+        except:
+            pass
+    if codec: # translate codec to a quality rank
+        codec_rank = codec_quality.get(codec.lower(), 0)
+        if codec_rank == 0:
+            raise Exception(f'Please add audio format {codec} to codec_quality')
+    else:
+        codec_rank = 0 # cannot parse codec at all, use lowest ranking
     bitrate = getattr(media, 'bitrate', 0)
     sample_rate = getattr(media, 'audioSampleRate', 0)
     notHasMood = int(not getattr(track, "hasMood", False))
