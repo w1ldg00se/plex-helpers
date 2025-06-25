@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Description see plexPlaylistDedup.md
+
+Many thanks to https://github.com/dfatih/PlexMusicDeDuplicator and https://github.com/jonasbp2011/PlexSmartPlaylistDeduplicator from which this scipt originates.
 """
 
 import argparse

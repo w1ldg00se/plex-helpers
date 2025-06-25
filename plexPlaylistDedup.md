@@ -2,6 +2,8 @@
 Removes all duplicate songs from a smart playlist.
 It is using the workaround with setting a mood on duplicate songs, and then excluding those songs from the smart playlist.
 
+Many thanks to [dfatih/PlexMusicDeDuplicator](https://github.com/dfatih/PlexMusicDeDuplicator) and [jonasbp2011/PlexSmartPlaylistDeduplicator](https://github.com/jonasbp2011/PlexSmartPlaylistDeduplicator) from which this scipt originates.
+
 ## How it works
 The script works by choosing the name of the smart playlist you wish to remove duplicate songs from. It adds the mood `Duplicate title-of-playlist` to any of the songs found as duplicates. Just a general `Duplicate` mood doesn't work because a track could be in multiple playlists and be only a duplicate in one specific playlist and not in other playlists, thats why the name of the playlist is included in the mood.
 Out of all the duplicate tracks one version with the best quality is choosen as the unique track, and unless a better quality version appears this one stays the unique one, even after multiple runa of this script. This is relevent for playlists synced for offline play with Plexamp so it doesn't have to sync another version of the same song after each time this script is run.
