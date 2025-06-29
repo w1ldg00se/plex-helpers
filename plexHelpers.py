@@ -410,7 +410,7 @@ def select_destination(paths = []):
     return destination['path']
 
 
-def select_playlist(plex, playlistType: Optional[Literal['audio', 'video', 'photo']] = None, smart: Optional[bool] = None, choice: Optional[str] = None, multiple: Optional[bool] = False):
+def select_playlist(plex, playlist_type: Optional[Literal['audio', 'video', 'photo']] = None, smart: Optional[bool] = None, choice: Optional[str] = None, multiple: Optional[bool] = False):
     """
     Allows the user to choose a playlist.
 
@@ -420,8 +420,8 @@ def select_playlist(plex, playlistType: Optional[Literal['audio', 'video', 'phot
     Optionally allows to select multiple playlists, but only when choice is a regex
     """
     playlists = plex.playlists()
-    if playlistType:
-        playlists = [p for p in playlists if p.playlistType == playlistType]
+    if playlist_type:
+        playlists = [p for p in playlists if p.playlistType == playlist_type]
     if smart != None:
         playlists = [p for p in playlists if p.smart == smart]
     playlists = sorted(playlists, key=lambda x: x.title)
@@ -451,7 +451,7 @@ def select_playlist(plex, playlistType: Optional[Literal['audio', 'video', 'phot
                 pass
 
             if playlist == None:
-                return select_playlist(plex, playlistType, smart, None)
+                return select_playlist(plex, playlist_type, smart, None)
     else:
         try:
             playlist = next((p for p in playlists if p.title.lower() == choice.lower()), None)
@@ -474,6 +474,63 @@ def select_playlist(plex, playlistType: Optional[Literal['audio', 'video', 'phot
     print(f'\r\033[KPlaylist: {playlist.title}')
     print("Loading playlist...", end="\r", flush=True)
     return playlist
+
+
+def select_section(plex, section_type: Optional[Literal['movie', 'show', 'artist', 'photo']] = None, choice: Optional[str] = None):
+    """
+    Allows the user to choose a section.
+
+    Optionally specify a section type of movie, show, artist or photo.
+    Optionally specify a section name via choice.
+    """
+    sections = plex.library.sections()
+    if section_type:
+        sections = [s for s in sections if s.type == section_type]
+    sections = sorted(sections, key=lambda x: x.title)
+
+    if not sections:
+        print('No Sections available')
+        return
+
+    section = None
+    if choice == None:
+        print('\r\033[KChoose Section:')
+        # for s in sections:
+        #     print(s.totalStorage)
+
+        for i, s in enumerate(sections):
+            print('{}: {}, {} {} items, added on {}, locations: {}'.
+                format(i,
+                        s.title,
+                        s.totalSize,
+                        s.type,
+                        s.createdAt.date(),
+                        s.locations))
+
+        choice = input('Section: ')
+        try:
+            section = sections[int(choice)]
+        except (ValueError, IndexError):
+            try:
+                section = next((s for s in sections if s.title.lower() == choice.lower()), None)
+            except:
+                pass
+
+            if section == None:
+                return select_section(plex, section_type, None)
+    else:
+        try:
+            section = next((s for s in sections if s.title.lower() == choice.lower()), None)
+        except:
+            pass
+
+        if section == None:
+            print(f"\r\033[KSection '{choice}' not found!")
+            return
+
+    print(f'\r\033[KSection: {section.title}')
+    print("Loading section...", end="\r", flush=True)
+    return section
 
 
 def select_server(account):
