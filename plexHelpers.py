@@ -14,9 +14,10 @@ import pathlib
 import platform
 import re
 import requests
+import shutil
 import signal
 import stat
-import shutil
+import subprocess
 import sys
 from tqdm import tqdm
 from typing import Optional, Literal
@@ -285,6 +286,35 @@ def plex_connect():
         os.chmod(settings_file, stat.S_IRUSR | stat.S_IWUSR)  # read & write permissions for owner only, equivalent to 0o600
 
         return plex
+
+
+def run_command(cmd, dry_run=False, verbose=False, raiseException=True, returncode=0, cwd=''):
+    """
+    Runs a shell command.
+    """
+    if not cwd:
+        cwd = os.getcwd()
+
+    if dry_run or verbose:
+        print("[cmd] " + " ".join(cmd), file=sys.stderr)
+        if dry_run:
+            return "", "", returncode
+
+    process = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+
+    if process.returncode == returncode: # usually 0, except in some stupid 3rd-party programs
+        try:
+            return stdout.decode("utf-8"), stderr.decode("utf-8"), process.returncode
+        except:
+            return stdout, stderr, process.returncode
+    else:
+        print("[ERROR {}] running command: {}".format(process.returncode, " ".join(cmd)), file=sys.stderr)
+        print(stderr.decode("utf-8"), file=sys.stderr)
+        if raiseException:
+            raise Exception("[ERROR {}] running command: {}: {}, {}".format(process.returncode, " ".join(cmd), stdout.decode("utf-8"), stderr.decode("utf-8")))
+        else:
+            return stdout.decode("utf-8"), stderr.decode("utf-8"), process.returncode
 
 
 def select_destination(paths = []):

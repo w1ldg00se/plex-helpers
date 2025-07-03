@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Places each item of a section in a collection which name is the top subfolder of the file location.
+Places each item of a section in a collection. The collection name is the top subfolder of the file location.
 Items not in a subfolder are added to collection 'Others'.
 
 i.e. Pictures/Album1/**.jpg -> all those pictures will be added to collection 'Album1'.

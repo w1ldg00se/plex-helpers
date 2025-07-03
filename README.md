@@ -2,9 +2,11 @@
 
 Helper scripts for Plex Media Server:
 - [Plex Smart Playlist Deduplicator](plexPlaylistDedup.md): Removes all duplicate songs from a smart playlist.
+- [Plex Metadata from Video](plexMetadataFromVideo.py): Updates metadata in plex with metadata extracted from the video file.
 - [Plex Delete Media](plexDeleteMedia.py): Deletes all items found in the selected playlist to reclaim storage space.
 - [Plex Download Media](plexDownloadMedia.py): Downloads all items found in the selected playlist to the local computer.
 - [Plex Docker Update](plexDockerUpdate.py): Restart plex's docker container when a plex update available.
+- [Plex Subfolder to Collection](plexSubfolder2Collection.py): Places each item of a section in a collection. The collection name is the top subfolder of the file location.
 
 ## Requirements
 - [Python 3](https://www.python.org/) (Tested with 3.13)
