@@ -21,7 +21,7 @@ import tempfile
 from pathlib import PurePath
 from plexapi.collection import Collection
 from tqdm import tqdm
-from plexHelpers import get_url, plex_connect, run_command, select_section
+from plexHelpers import plex_connect, run_command, select_section
 
 
 # for removing youtube id from title
@@ -193,22 +193,22 @@ def set_embedded_thumbnail(item, file):
 
 def addEmbeddedMetadata(plex, item):
     """
-    Downloads the first MB of the file, extracts metadata and updates the metadata in plex.
+    Downloads the first 2MB of the file, extracts metadata and updates the metadata in plex.
     """
 
-    # Download up to one MB in 256kB chunks and try to get video information via ffprobe.
-    # This works on container files like mkv where the file metadata is stored in the first MB.
+    # Download up to 2MB in 256kB chunks and try to get video information via ffprobe.
+    # This works on container files like mkv/mp4 where the file metadata is stored in the first 1-2MB.
     info = None
-    byte_limit = 1024*1024 # 1MB or filesize when file is smaller
-    chunk_size = 256*1024  # 4 chunks a'la 256kB (128kB is often too little data, so 256kB should work in most cases)
-    headers = {'Range': f'bytes=0-{byte_limit - 1}'}
-    for media_ix, media in enumerate(item.media):
-        for part_ix, part in enumerate(media.parts):
-            response = requests.get(get_url(plex, part.key), headers=headers, stream=True)
-
+    byte_limit = 2*1024*1024 # 2MB or filesize when file is smaller
+    chunk_size = 256*1024  # up to 8 chunks a'la 256kB (for most mkv files without thumbnail 256kB should be enough to parse metadata, mp4 needs >1MB)
+    headers = {'Range': f'bytes=0-{byte_limit - 1}', 'X-Plex-Token': plex._token}
+    for media in item.media:
+        for part in media.parts:
+            response = requests.get(f'{plex._baseurl}{part.key}', headers=headers, stream=True)
             with tempfile.NamedTemporaryFile() as tmp:
                 for chunk in response.iter_content(chunk_size):
                     tmp.write(chunk)
+                    tmp.flush() # needs flush because file is then read with external program 'ffprobe'
 
                     info = get_video_info(tmp.name)
                     if info:

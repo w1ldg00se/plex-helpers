@@ -61,8 +61,8 @@ def download_item(plex, item, skipDownload = False, basepath: Optional[str] = 'D
         be completely re-downloaded (file on server changed) or the download can be resumed.
         """
         byte_limit = min(1024*1024, os.path.getsize(file)) # 1MB or filesize when file is smaller
-        headers = {'Range': f'bytes=0-{byte_limit - 1}'}
-        response = requests.get(get_url(plex, part.key), headers=headers, stream=True)
+        headers = {'Range': f'bytes=0-{byte_limit - 1}', 'X-Plex-Token': plex._token}
+        response = requests.get(f'{plex._baseurl}{part.key}', headers=headers, stream=True)
 
         with open(file, 'rb') as local_file:
             total = 0
@@ -104,11 +104,10 @@ def download_item(plex, item, skipDownload = False, basepath: Optional[str] = 'D
                 os.makedirs(path)
 
             # download with progress bar, resume existing files
-            headers = None
+            headers = {'X-Plex-Token': plex._token}
             if existing_filesize > 0:
-                headers = {"Range": f"bytes={existing_filesize}-"}
-            response = requests.get(get_url(plex, part.key), headers=headers, stream=True)
-
+                headers.extend({"Range": f"bytes={existing_filesize}-"})
+            response = requests.get(f'{plex._baseurl}{part.key}', headers=headers, stream=True)
 
             mode = 'ab' if existing_filesize > 0 else 'wb'
             with open(file, mode) as f, tqdm(
@@ -151,8 +150,8 @@ def get_moods_via_autocomplete(plex, section, query):
     You can also run section.listFilterChoices('mood', 'track'), but that is much slower and loads all moods without filtering.
     This returns a list of MyFilterChoice objects, so it's a faster drop-in replacement for listFilterChoices.
     """
-    url = get_url(plex, f'/library/sections/{section.key}/autocomplete?type=10&mood.query={query}')
-    headers = {'Accept': 'application/json'}
+    url = f'{plex._baseurl}/library/sections/{section.key}/autocomplete?type=10&mood.query={query}'
+    headers = {'Accept': 'application/json', 'X-Plex-Token': plex._token}
     response = requests.get(url, headers=headers)
     moods = []
     media_container = response.json()['MediaContainer']
@@ -209,15 +208,6 @@ def get_track_quality(track):
     notHasMood = int(not getattr(track, "hasMood", False))
 
     return (codec_rank, bitrate, sample_rate, notHasMood)
-
-
-def get_url(plex, urlpart):
-    """
-    Generate URL to query the Plex server (for code that can't use plexaapi).
-
-    urlpart: part of the url after the hostname and port, must begin with '/' and can contain '?option=value' arguments.
-    """
-    return f'{plex._baseurl}{urlpart}&X-Plex-Token={plex._token}'
 
 
 def mood_add(track, moodName):

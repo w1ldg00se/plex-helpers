@@ -3,7 +3,7 @@
 Restart plex's docker container when a plex update available, but only when nobody is streaming currently.
 """
 
-from plexHelpers import get_url, plex_connect
+from plexHelpers import plex_connect
 import docker
 import requests
 
@@ -14,8 +14,8 @@ def is_latest(plex):
 
     Like isLatest from plexapi but that seems to always return true, but it works when '?X-Plex-Product=Plex%20Web' is specified.
     """
-    headers = {'Accept': 'application/json'}
-    url = get_url(plex, '/updater/status?X-Plex-Product=Plex%20Web')
+    headers = {'Accept': 'application/json', 'X-Plex-Token': plex._token}
+    url = f'{plex._baseurl}/updater/status?X-Plex-Product=Plex%20Web'
     response = requests.get(url, headers=headers)
     try:
         return response.ok and response.json()['MediaContainer']['size'] == 0
